@@ -40,24 +40,28 @@ def my_gossip():
     gossips = (db_session.query(Gossip).
                filter(Gossip.user_id == session['user_id']).
                offset(page * 10).limit(10).all())
-    return jsonify(gossips)
+    return render_template('my_gossip.html', my_gossips=gossips)
 
 
-@app.route('/infoceter')
+@app.route('/infocenter')
 def infocenter():
     page = request.args.get('page', 0)
     friends = Friend.query.filter(Friend.user1 == session['user_id']).all()
+    if len(friends) == 0:
+        return render_template('infocenter.html', r_gossips=[])
     friends_id = map(lambda friend: friend.user_id, friends)
     r_gossips = (Gossip.query.join(Player, Gossip.user_id == Player.user_id).
                  filter(Gossip.user_id.in_(friends_id)).
                  offset(page * 10).limit(10).all())
-    return jsonify(r_gossips)
+    return render_template('infocenter.html', r_gossips=r_gossips)
 
 
 @app.route('/rank')
 def rank():
     page = request.args.get('page', 0)
     friends = Friend.query.filter(Friend.user1 == session['user_id']).all()
+    if len(friends) == 0:
+        return render_template('ranked.html', ranked=[])
     friends_id = map(lambda friend: friend.user_id, friends)
     if request.args.get('type') == 'week':
         ranked = (Player.query.filter(Player.user_id.in_(friends_id)).
@@ -65,7 +69,7 @@ def rank():
     else:
         ranked = (Player.query.filter(Player.user_id.in_(friends_id)).
                   order_by(Player.diamond).offset(page * 10).limit(10).all())
-    return jsonify(ranked)
+    return render_template('rank.html', ranked=ranked)
 
 
 @app.route('/fish')
@@ -81,7 +85,7 @@ def fish():
 @app.route('/message-box')
 def message_box():
     messages = Invite.query.filter(Invite.user2 == session['user_id']).all()
-    return jsonify(messages)
+    return render_template(messages)
 
 
 @app.route('/agree')
@@ -108,7 +112,7 @@ def add_friend():
             db_session.add(Invite(user1=session['user_id'], user2=user_id))
             db_session.add(Invite(user1=user_id, user2=session['user_id']))
             db_session.commit()
-    return jsonify('ok')
+    return render_template('ok')
 
 
 @app.route('/login', methods=['POST', 'GET'])

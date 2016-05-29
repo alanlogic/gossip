@@ -1,95 +1,56 @@
 {% extends "layout.html" %}
 {% block script %}
-    <script src="{{ url_for('static', filename='angular.min.js') }}"></script>
     <script>
-        <!-- I think there must be a better way to finish the work -->
-        var app = angular.module('gossip', []);
-        app.config(['$interpolateProvider', function($interpolateProvider) {
-            $interpolateProvider.startSymbol('{[');
-            $interpolateProvider.endSymbol(']}');
-        }]);
-        app.controller('gossipCtrl', function($scope, $http) {
-            var init_page = 0;
-            var click_info = [
-                {
-                    ngclick: $scope.my_gossip,
-                    url: "{{ url_for('my_gossip') }}", 
-                    data: {page: init_page}, 
-                    model: $scope.gossips
-                },
-                {
-                    ngclick: $scope.rank,
-                    url: "{{ url_for('rank')) }}", 
-                    data: {page: init_page}, 
-                    model: $scope.players
-                },
-                {
-                    ngclick: $scope.infocenter,
-                    url: "{{ url_for('infocenter')) }}", 
-                    data: {page: init_page}, 
-                    model: $scope.r_gossips
-                },
-                {
-                    ngclick: $scope.fish,
-                    url: "{{ url_for('fish')) }}", 
-                    data: {}, 
-                    model: $scope.text
-                },
-                {
-                    ngclick: $scope.message_box,
-                    url: "{{ url_for('message_box')) }}", 
-                    data: {page: init_page}, 
-                    model: $scope.requests
-                }
-            ]
+        $(document).ready(function() {
+            var page = [0, 0, 0];
+            $('#gossip').click(function(evt) {
+                var url=$(this).attr('href');
+                $('main').load(url);
+                evt.preventDefault();
+            });
+            $('#gossip').click();
 
-            click_info.forEach(function(item, index, array) {
-                item.ngclick = function() {
-                    click_info.forEach(function(it, i, a) {
-                        if (item != it || it.data.page == 0){
-                            it.model = null;
-                        } 
-                    });
-                    $http.get(item.url, data).then(function(response) {
-                        item.model = response.data;
-                        item.data.page++
-                    });
-                }
+            $('#rank').click(function(evt) {
+                var url=$(this).attr('href');
+                $('main').load(url);
+                evt.preventDefault();
+            });
+
+            $('#info').click(function(evt) {
+                var url=$(this).attr('href');
+                $('main').load(url);
+                evt.preventDefault();
+            });
+
+            $('#fish').click(function(evt) {
+                var url=$(this).attr('href');
+                $('main').load(url);
+                evt.preventDefault();
+            });
+
+            $('#add-friend').click(function(evt) {
+                var url=$(this).attr('href');
+                $('main').load(url);
+                evt.preventDefault();
+            });
+
+            $('#request').click(function(evt) {
+                var url=$(this).attr('href');
+                $('main').load(url);
+                evt.preventDefault();
             });
         });
     </script>
 {% endblock %}
 {% block body %}
-    <div ng-app="gossip", ng-controller="gossipCtrl">
-        <aside>
-            <a href="javascript:;" ng-click="my_gossip()" id="gossip">我的Gossip</a>
-            <a href="javascript:;" ng-click="rank()" id="rank()">金币排行榜</a>
-            <a href="javascript:;" ng-click="infocenter()" id="info">好友动态</a>
-            <a href="javascript:;" ng-click="fish()" id="fish">钓鱼场</a>
-            <a href="javascript:;" ng-click="friend()" id="add-friend">添加好友</a>
-            <a href="javascript:;" ng-click="message_box()" id="request">好友请求</a>
-        </aside>
-        <main>
-            <ul>
-                <li ng-repeat="gossip in gossips">{[ gossip ]}</li>
-            </ul>
-            <ul>
-                <!-- need change gossip.py to transfer less data -->
-                <li ng-repeat="r_gossip in r_gossips">
-                    {[ r_gossip.Player.nickname ]}:{[ r_gossip.Gossip.content ]}
-                </li>
-            </ul>
-            <ul>
-                <li ng-repeat="player in players">
-                    {[ player.nickname ]}:{[ player.gold ]}
-                </li>
-            </ul>
-            <p ng-model="text"></p>
-            <ul>
-                <li ng-repeat="request in requests">好友请求</li>
-            </ul>
-        </main>
-        <div id="flip-page">
-        </div>
-    </div>
+    <aside>
+        <a href="{{ url_for('my_gossip') }}" id="gossip">我的Gossip</a>
+        <a href="{{ url_for('rank') }}" id="rank">金币排行榜</a>
+        <a href="{{ url_for('infocenter') }}" id="info">好友动态</a>
+        <a href="{{ url_for('fish') }}" id="fish">钓鱼场</a>
+        <a href="{{ url_for('add_friend') }}" id="add-friend">添加好友</a>
+        <a href="{{ url_for('message_box') }}" id="request">好友请求</a>
+    </aside>
+    <main>
+    </main>
 {% endblock %}
