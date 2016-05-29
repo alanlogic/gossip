@@ -37,10 +37,10 @@ def user_index(user_id):
 @app.route('/my-gossip')
 def my_gossip():
     page = request.args.get('page', 0)
-    gossips = (db_session.query(Gossip).
+    gossips = (Gossip.query.
                filter(Gossip.user_id == session['user_id']).
                offset(page * 10).limit(10).all())
-    return render_template('my_gossip.html', my_gossips=gossips)
+    return render_template('my_gossip.html', gossips=gossips)
 
 
 @app.route('/infocenter')
@@ -49,9 +49,10 @@ def infocenter():
     friends = Friend.query.filter(Friend.user1 == session['user_id']).all()
     if len(friends) == 0:
         return render_template('infocenter.html', r_gossips=[])
-    friends_id = map(lambda friend: friend.user_id, friends)
-    r_gossips = (Gossip.query.join(Player, Gossip.user_id == Player.user_id).
-                 filter(Gossip.user_id.in_(friends_id)).
+    friends_id = map(lambda friend: friend.user2, friends)
+    r_gossips = (db_session.query(Gossip, Player.nickname).
+                 filter(Gossip.user_id.in_(friends_id),
+                        Gossip.user_id == Player.user_id).
                  offset(page * 10).limit(10).all())
     return render_template('infocenter.html', r_gossips=r_gossips)
 
@@ -62,13 +63,9 @@ def rank():
     friends = Friend.query.filter(Friend.user1 == session['user_id']).all()
     if len(friends) == 0:
         return render_template('ranked.html', ranked=[])
-    friends_id = map(lambda friend: friend.user_id, friends)
-    if request.args.get('type') == 'week':
-        ranked = (Player.query.filter(Player.user_id.in_(friends_id)).
-                  order_by(Player.gold).offset(page * 10).limit(10).all())
-    else:
-        ranked = (Player.query.filter(Player.user_id.in_(friends_id)).
-                  order_by(Player.diamond).offset(page * 10).limit(10).all())
+    friends_id = map(lambda friend: friend.user2, friends)
+    ranked = (Player.query.filter(Player.user_id.in_(friends_id)).
+              order_by(Player.gold).offset(page * 10).limit(10).all())
     return render_template('rank.html', ranked=ranked)
 
 
@@ -132,12 +129,13 @@ def logout():
     return redirect(url_for('main_index'))
 
 
+# need debug
 @app.route('/register', methods=['POST', 'GET'])
 def register():
     form = RegisterForm(request.form)
     if request.method == 'POST' and form.validate():
         user = form.add_user()  # There has a problem
-        return redirect(url_for(user.user_id))
+        return redirect(url_for('user_index', user_id=user.user_id))
     return render_template('register.html', form=form)
 
 if __name__ == "__main__":

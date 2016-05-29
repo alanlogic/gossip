@@ -1,0 +1,17 @@
+<!-- there could change front or back to implement sort by diamond -->
+<table>
+    <tr>
+        <th>昵称</th>
+        <th>金币数</th>
+        <th>钻石数</th>
+    </tr>
+    {% for player in ranked %}
+        <tr>
+            <td>{{ player.nickname }}</td>
+            <td>{{ player.gold }}</td>
+            <td>{{ player.diamond }}</td>
+        </tr>
+    {% else %}
+        <p>你还未添加好友</p>
+    {% endfor %}
+</table>
