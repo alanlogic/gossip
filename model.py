@@ -1,5 +1,5 @@
-from sqlalchemy import (Column, Integer, String,
-                        DateTime, Boolean)
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.sql.expression import func
 from database import Base
 from werkzeug.security import generate_password_hash
 
@@ -29,16 +29,15 @@ class Player(Base):
 class Gossip(Base):
     __tablename__ = 'gossip'
     gossip_id = Column(Integer, primary_key=True)
-    content = Column(Integer, nullable=False)
-    price = Column(Integer)
-    datetime = Column(DateTime)
+    content = Column(String, nullable=False)
+    price = Column(Integer, default=0)
+    datetime = Column(DateTime, default=func.now())
     user_id = Column(Integer)
 
-    def __init__(self, form):
+    def __init__(self, form, user_id):
         self.content = form['content']
         self.price = form['price']
-        self.datetime = form['datetime']
-        self.user_id = form['user_id']
+        self.user_id = user_id
 
 
 class Friend(Base):
@@ -46,7 +45,6 @@ class Friend(Base):
     record_id = Column(Integer, primary_key=True)
     user1 = Column(Integer)
     user2 = Column(Integer)
-    watch = Column(Boolean, default=False)
 
 
 class Invite(Base):

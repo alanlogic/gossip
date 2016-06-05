@@ -1,7 +1,8 @@
 import random
 
+from sqlalchemy.sql.expression import func, or_
 from flask import (Flask, request, redirect, url_for, abort,
-                   render_template, session, flash, jsonify)
+                   render_template, session, flash)
 
 from database import db_session
 from form import LoginForm, RegisterForm
@@ -9,13 +10,8 @@ from model import Gossip, Friend, User, Player, Invite
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SECRET_KEY'] = 'myGossip'
-
-
-def user_exist(user_id):
-    user = User.query.filter_by(user_id=user_id)
-    if user is None:
-        abort(404)
+app.config['SECRET_KEY'] = '''B\x8f\xcb"\x84{\xb7g\xb2\'\xb4v\xc3\x92\
+                              xc9\xf0\xcd\xc5\xfd\xc8\xfc\xdf\xa5\xb9'''
 
 
 @app.teardown_appcontext
@@ -30,86 +26,144 @@ def main_index():
 
 @app.route('/<int:user_id>')
 def user_index(user_id):
-    user_exist(user_id)
+    user = User.query.filter(User.user_id == user_id).one_or_none()
+    if user is None:
+        abort(404)
     return render_template('user_page.html')
 
 
 @app.route('/my-gossip')
 def my_gossip():
-    page = request.args.get('page', 0)
+    page = int(request.args.get('page', 0))
     gossips = (Gossip.query.
                filter(Gossip.user_id == session['user_id']).
-               offset(page * 10).limit(10).all())
-    return render_template('my_gossip.html', gossips=gossips)
+               order_by(Gossip.datetime.desc()).limit(10)
+               .offset(page * 10).all())
+    if len(gossips) == 0 and page != 0:
+        return 'nomore'
+    return render_template('my_gossip.html', gossips=gossips, page=page)
 
 
+def get_friends(user_id):
+    friends = (db_session.query(Friend.user1).
+               filter(Friend.user2 == user_id).
+               union
+               (db_session.query(Friend.user2).
+                filter(Friend.user1 == user_id))
+               .all())
+    return list(map(lambda friend: friend.user1, friends))
+
+
+# have another choice
 @app.route('/infocenter')
 def infocenter():
-    page = request.args.get('page', 0)
-    friends = Friend.query.filter(Friend.user1 == session['user_id']).all()
-    if len(friends) == 0:
-        return render_template('infocenter.html', r_gossips=[])
-    friends_id = map(lambda friend: friend.user2, friends)
+    page = int(request.args.get('page', 0))
+    friends_id = get_friends(session['user_id'])
+    if len(friends_id) == 0:
+        return render_template('infocenter.html', r_gossips=[], page=page)
     r_gossips = (db_session.query(Gossip, Player.nickname).
-                 filter(Gossip.user_id.in_(friends_id),
-                        Gossip.user_id == Player.user_id).
-                 offset(page * 10).limit(10).all())
-    return render_template('infocenter.html', r_gossips=r_gossips)
+                 join(Player, Gossip.user_id == Player.user_id).
+                 filter(Gossip.user_id.in_(friends_id)).
+                 order_by(Gossip.datetime.desc()).
+                 limit(10).offset(page * 10).all())
+    if len(r_gossips) == 0 and page != 0:
+        return 'nomore'
+    return render_template('infocenter.html', r_gossips=r_gossips, page=page)
+
+
+@app.route('/glance/<int:g_id>')
+def glance(g_id):
+    gossip = Gossip.query.filter(Gossip.gossip_id == g_id).one_or_none()
+    if gossip is None:
+        return 'none'
+    player = Player.query.filter(Player.user_id == session['user_id']).one()
+    if player.gold < gossip.price:
+        return 'noenough'
+    player.gold -= gossip.price
+    db_session.commit()
+    return gossip.content
 
 
 @app.route('/rank')
 def rank():
-    page = request.args.get('page', 0)
-    friends = Friend.query.filter(Friend.user1 == session['user_id']).all()
-    if len(friends) == 0:
-        return render_template('ranked.html', ranked=[])
-    friends_id = map(lambda friend: friend.user2, friends)
+    page = int(request.args.get('page', 0))
+    friends_id = get_friends(session['user_id'])
+    if len(friends_id) == 0:
+        return render_template('rank.html', ranked=[], page=page)
+    # validate if you have friends or it will be a warning
     ranked = (Player.query.filter(Player.user_id.in_(friends_id)).
               order_by(Player.gold).offset(page * 10).limit(10).all())
-    return render_template('rank.html', ranked=ranked)
+    return render_template('rank.html', ranked=ranked, page=page)
 
 
 @app.route('/fish')
 def fish():
-    # 50% probability get a gossip
-    # question: how to solve the problem of user maybe delete the gossip
-    success = random.randint(0, 1)
-    if success:
-        pass
+    max_id = db_session.query(func.max(Gossip.gossip_id)).scalar()
+    target_id = max_id * random.random()
+    f_gossip = (db_session.query(Gossip, User.username, Player.nickname).
+                join(User, Gossip.user_id == User.user_id).
+                join(Player, Gossip.user_id == Player.user_id).
+                filter(Gossip.gossip_id >= target_id)
+                .first())
+    return render_template('fish.html', f_gossip=f_gossip)
 
 
 # problem: only user look up the messagebox,otherwise won't get the Invite
 @app.route('/message-box')
 def message_box():
-    messages = Invite.query.filter(Invite.user2 == session['user_id']).all()
-    return render_template(messages)
+    # a confusing query
+    requests = (db_session.query(Invite.user2, User.username).
+                join(User, Invite.user2 == User.user_id).
+                filter(Invite.user1 == session['user_id']).all())
+    return render_template('message_box.html', requests=requests)
 
 
-@app.route('/agree')
-def agree():
-    # todo:add auth about the user_id
-    inviter_id = request.args.get('inviter', None)
-    if inviter_id is not None:
-        db_session.add(Friend(session['user_id'], inviter_id))
+@app.route('/reply')
+def reply():
+    inviter_id = request.args.get('inviterId', None)
+    if inviter_id is None:
+        return 'fail'
+    invitation = Invite.query.filter(Invite.user1 == session['user_id'],
+                                     Invite.user2 == inviter_id).first()
+    if invitation is None:
+        return 'norecord'
+    if request.args.get('reply', 'refuse') == 'accept':
+        db_session.add(Friend(user1=session['user_id'], user2=inviter_id))
+    db_session.delete(invitation)
+    db_session.commit()
+    return 'success'
 
 
 @app.route('/add-gossip', methods=['Post'])
 def add_gossip():
-    db_session.add(Gossip(request.form))
+    db_session.add(Gossip(request.form, session['user_id']))
     db_session.commit()
-    return jsonify('ok')
+    return 'success'
 
 
 @app.route('/add-friend')
 def add_friend():
     username = request.args.get('username', None)
-    if username is not None:
-        user_id = User.query.filter(User.username == username).first()
-        if user_id is not None:
-            db_session.add(Invite(user1=session['user_id'], user2=user_id))
-            db_session.add(Invite(user1=user_id, user2=session['user_id']))
-            db_session.commit()
-    return render_template('ok')
+    if username is None:
+        return 'fail'
+    user = User.query.filter(User.username == username).one_or_none()
+    if user is None:
+        return 'nobody'
+    has_been = (Friend.query.filter(or_(Friend.user1 == session['user_id'],
+                                        Friend.user2 == user.user_id),
+                                    (Friend.user2 == session['user_id'],
+                                     Friend.user1 == user.user_id)).
+                one_or_none())
+    if has_been is not None:
+        return 'hasbeen'
+    invited = (Invite.query.filter(Invite.user1 == user.user_id,
+                                   Invite.user2 == session['user_id']).
+               one_or_none())
+    if invited is not None:
+        return 'invited'
+    db_session.add(Invite(user1=user.user_id, user2=session['user_id']))
+    db_session.commit()
+    return 'success'
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -134,7 +188,8 @@ def logout():
 def register():
     form = RegisterForm(request.form)
     if request.method == 'POST' and form.validate():
-        user = form.add_user()  # There has a problem
+        user = form.add_user()
+        session['user_id'] = user.user_id
         return redirect(url_for('user_index', user_id=user.user_id))
     return render_template('register.html', form=form)
 

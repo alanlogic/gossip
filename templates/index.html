@@ -1,0 +1,22 @@
+{% extends 'layout.html' %}
+{% block body %}
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+        <ul class="nav navbar-nav">
+            {% if session.get('user_id', None) == None %}
+                <li><a href="{{ url_for('register') }}"><span class="glyphicon glyphicon-registration-mark"></span>注册</a></li>
+                <li><a href="{{ url_for('login') }}"><span class="glyphicon glyphicon-log-in"></span>登录</a></li>
+            {% else %}
+                <li><a href="{{ url_for('logout') }} "><span class="glyphicon glyphicon-log-out"></span>退出登录</a></li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+<div id="intro" class="jumbotron well">
+    <h2>Welcome</h2>
+    <p>首先欢迎您的访问，这是一个说说+漂流瓶的游戏版的网站。</p>
+    <p>在这里你可以‘钓’别人发的gossip（闲话），这有一定的概率获得一定数目金币
+    <p>你也可以自己发gossip，并把gossip设置为别人付你一定的金币后才能查看（当然，也可以设为免费）</p>
+    <p>如果你觉得还算有意思就快注册个账号试试看吧！当然，如果你能把它介绍给朋友是更好地</p>
+</div>
+{% endblock %}

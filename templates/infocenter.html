@@ -1,6 +1,23 @@
-{% for gossip in r_gossips %}
-    <p>{{ gossip.nickname }}:</p>
-    <p>{{ gossip.Gossip.content }}</p>
-{% else %}
-    <p>你还未添加好友或好友都未曾发过gossip</p>
-{% endfor %}
+<ul class="list-group gossips">
+    {% for gossip in r_gossips %}
+        <li class="list-group-item panel panel-default">
+            <div class="panel-heading">
+                {{ gossip.nickname }}:
+            </div>
+            <div class="panel-body">
+                {% if gossip.Gossip.price == 0 %}
+                    {{ gossip.Gossip.content }}
+                {% else %}
+                    <a href="{{ url_for('glance', g_id=gossip.Gossip.gossip_id) }}" class="glance">
+                        您须花费{{ gossip.Gossip.price }}金币查看该Gossip
+                    </a>
+                {% endif %}
+            </div>
+            <div class="panel-footer">
+                <span class="time">{{ gossip.Gossip.datetime }}</span>
+            </div>
+        </li>
+    {% else %}
+        <p>你还未添加好友或好友都未曾发过gossip</p>
+    {% endfor %}
+</ul>

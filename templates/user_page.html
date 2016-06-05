@@ -1,56 +1,74 @@
 {% extends "layout.html" %}
 {% block script %}
+    <script src="{{ url_for('static', filename='js/gossip.js') }}"></script>
     <script>
-        $(document).ready(function() {
-            var page = [0, 0, 0];
-            $('#gossip').click(function(evt) {
-                var url=$(this).attr('href');
-                $('main').load(url);
+        $(document).ready(function(){
+            $('#seek_friend').click(function(evt) {
+                var seekInput = "<div class='form-group'><input type='text' id='username' class='form-control'></div>";
+                var seekLink = "<a href='{{ url_for('add_friend') }}' id='seek' class='btn btn-default'>添加好友</a>";
+                $('main').html(seekInput + seekLink);
+                $('.active').removeClass('active');
+                $(this).parent('li').addClass('active');
+                $('#more').hide();
                 evt.preventDefault();
-            });
-            $('#gossip').click();
+            }); //end click
 
-            $('#rank').click(function(evt) {
-                var url=$(this).attr('href');
-                $('main').load(url);
+            $('#fishing-ground').click(function(evt) {
+                var div_fish = '<div id="present"></div>';
+                var a_fish = "<a href='{{ url_for('fish') }}' id='fish' class='btn btn-default'>钓条Gossip</a>";
+                $('main').html(div_fish + a_fish);
+                $('.active').removeClass('active');
+                $(this).parent('li').addClass('active');
+                $('#more').hide();
                 evt.preventDefault();
-            });
-
-            $('#info').click(function(evt) {
-                var url=$(this).attr('href');
-                $('main').load(url);
-                evt.preventDefault();
-            });
-
-            $('#fish').click(function(evt) {
-                var url=$(this).attr('href');
-                $('main').load(url);
-                evt.preventDefault();
-            });
-
-            $('#add-friend').click(function(evt) {
-                var url=$(this).attr('href');
-                $('main').load(url);
-                evt.preventDefault();
-            });
-
-            $('#request').click(function(evt) {
-                var url=$(this).attr('href');
-                $('main').load(url);
-                evt.preventDefault();
-            });
+            }); //end click
+                    
         });
     </script>
 {% endblock %}
 {% block body %}
-    <aside>
-        <a href="{{ url_for('my_gossip') }}" id="gossip">我的Gossip</a>
-        <a href="{{ url_for('rank') }}" id="rank">金币排行榜</a>
-        <a href="{{ url_for('infocenter') }}" id="info">好友动态</a>
-        <a href="{{ url_for('fish') }}" id="fish">钓鱼场</a>
-        <a href="{{ url_for('add_friend') }}" id="add-friend">添加好友</a>
-        <a href="{{ url_for('message_box') }}" id="request">好友请求</a>
-    </aside>
-    <main>
-    </main>
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span> 
+                    <span class="icon-bar"></span> 
+                    <span class="icon-bar"></span>                         
+                </button>
+                <a class="navbar-brand" href="#">Gossip</a>
+            </div>
+            <div class="collapse navbar-collapse" id="myNavbar">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="{{ url_for('my_gossip') }}" id="gossip">我的Gossip</a></li>
+                    <li><a href="{{ url_for('rank') }}" id="rank">好友金币排行</a></li>
+                    <li><a href="{{ url_for('infocenter') }}" id="info">好友动态</a></li>
+                    <li><a href="#" id="seek_friend">添加好友</a></li>
+                    <li><a href="{{ url_for('message_box') }}" id="request">好友请求</a></li>
+                    <li><a href="#" id="fishing-ground">钓鱼场</a></li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    {% if session.get('user_id', None) == None %}
+                        <li><a href="{{ url_for('register') }}"><span class="glyphicon glyphicon-registration-mark"></span>注册</a></li>
+                        <li><a href="{{ url_for('login') }}"><span class="glyphicon glyphicon-log-in"></span>登录</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('logout') }} "><span class="glyphicon glyphicon-log-out"></span>退出登录</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-9 well">
+                <main>
+                </main>
+                <button id="more" data-page="1" class="btn btn-default">加载更多</button>
+            </div>
+            <div class="col-lg-3">
+            </div>
+        </div>
+    </div>
 {% endblock %}

@@ -1,0 +1,11 @@
+<table>
+    {% for req in requests %}
+        <tr data-id="{{ req.user2 }}">
+            <td>{{ req.username }}请求加你为好友</td>
+            <td><a href="{{ url_for('reply') }}" class="reply btn btn-default" data-reply="accept">接受</a></td>
+            <td><a href="{{ url_for('reply') }}" class="reply btn btn-default" data-reply="refuse">拒绝</a></td>
+        </tr>
+    {% else %}
+        <p>还没人向你发出过好友请求</p>
+    {% endfor %}
+</table>
